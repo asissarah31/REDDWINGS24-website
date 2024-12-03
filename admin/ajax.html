@@ -1,0 +1,201 @@
+<?php
+ob_start();
+$action = $_GET['action'];
+include 'admin_class.php';
+$crud = new Action();
+
+if($action == 'login'){
+	$login = $crud->login();
+	if($login)
+		echo $login;
+}
+if($action == 'login2'){
+	$login = $crud->login2();
+	if($login)
+		echo $login;
+}
+if($action == 'logout'){
+	$logout = $crud->logout();
+	if($logout)
+		echo $logout;
+}
+if($action == 'logout2'){
+	$logout = $crud->logout2();
+	if($logout)
+		echo $logout;
+}
+if($action == 'save_user'){
+	$save = $crud->save_user();
+	if($save)
+		echo $save;
+}
+if($action == 'signup'){
+	$save = $crud->signup();
+	if($save)
+		echo $save;
+}
+if($action == "save_settings"){
+	$save = $crud->save_settings();
+	if($save)
+		echo $save;
+}
+if($action == "save_category"){
+	$save = $crud->save_category();
+	if($save)
+		echo $save;
+}
+if($action == "delete_category"){
+	$save = $crud->delete_category();
+	if($save)
+		echo $save;
+}
+if($action == "save_menu"){
+	$save = $crud->save_menu();
+	if($save)
+		echo $save;
+}
+if($action == "delete_menu"){
+	$save = $crud->delete_menu();
+	if($save)
+		echo $save;
+}
+if($action == "add_to_cart"){
+	$save = $crud->add_to_cart();
+	if($save)
+		echo $save;
+}
+if($action == "get_cart_count"){
+	$save = $crud->get_cart_count();
+	if($save)
+		echo $save;
+}
+if($action == "delete_cart"){
+	$delete = $crud->delete_cart();
+	if($delete)
+		echo $delete;
+}
+if($action == "update_cart_qty"){
+	$save = $crud->update_cart_qty();
+	if($save)
+		echo $save;
+}
+if($action == "save_order"){
+	$save = $crud->save_order();
+	if($save)
+		echo $save;
+}
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Capture the selected payment method
+    $payment_method = $_POST['payment_method'];  // This should match the value from the form
+
+    // Handle based on payment method
+    if ($payment_method == 'COD') {
+        // Process COD logic
+        // Example: Save order with COD details
+    } elseif ($payment_method == 'GCASH') {
+        // Process GCASH logic
+        $gcash_name = $_POST['gcash_name'];
+        $gcash_number = $_POST['gcash_number'];
+
+        // Example: Store the GCash details or forward to payment gateway
+    } elseif ($payment_method == 'PAYPAL') {
+        // Process PayPal logic
+        $paypal_name = $_POST['paypal_name'];
+        $paypal_email = $_POST['paypal_email'];
+
+        // Example: Redirect to PayPal or store PayPal details
+    }
+
+    // Continue with saving order details into database
+    // Respond appropriately to the frontend
+}
+
+
+if($action == "confirm_order"){
+	$save = $crud->confirm_order();
+	if($save)
+		echo $save;
+}
+// admin/ajax.php
+class CRUD {
+    private $db;
+
+    public function __construct($dbConnection) {
+        $this->db = $dbConnection;
+    }
+
+    public function confirm_order() {
+        // Check if necessary session variables are set
+        if (isset($_SESSION['login_user_id'])) {
+            $user_id = $_SESSION['login_user_id'];
+
+            // Assuming you have a method to get the total amount
+            $total = $this->calculate_order_total($user_id); // Implement this function
+
+            if ($total > 0) {
+                // Insert order into the database
+                $stmt = $this->db->prepare("INSERT INTO orders (user_id, total, status, order_date) VALUES (?, ?, 1, NOW())");
+                $stmt->bind_param('id', $user_id, $total);
+                if ($stmt->execute()) {
+                    return $stmt->insert_id; // Return the order ID
+                }
+            }
+        }
+        return false; // Return false if order confirmation fails
+    }
+
+    private function calculate_order_total($user_id) {
+        $total = 0;
+        // Logic to calculate total based on the user's cart
+        $qry = $this->db->query("SELECT product_id, qty FROM cart WHERE user_id = $user_id");
+        while ($row = $qry->fetch_assoc()) {
+            // Assuming you have a method to get product price
+            $product_price = $this->get_product_price($row['product_id']);
+            $total += $product_price * $row['qty'];
+        }
+        return $total;
+    }
+
+    private function get_product_price($product_id) {
+        $qry = $this->db->query("SELECT price FROM products WHERE product_id = $product_id");
+        if ($row = $qry->fetch_assoc()) {
+            return $row['price'];
+        }
+        return 0; // Return 0 if product not found
+    }
+}
+if ($_GET['action'] == 'create_stripe_session') {
+    require 'vendor/autoload.php';
+    
+    \Stripe\Stripe::setApiKey('your_stripe_secret_key');
+    
+    // Assuming you have the total amount available
+    $order_id = $_SESSION['order_id']; // Retrieve the order ID after confirming
+    $total = $crud->get_order_total($order_id); // Implement this function to get the order total
+
+    $session = \Stripe\Checkout\Session::create([
+        'payment_method_types' => ['card'],
+        'line_items' => [[
+            'price_data' => [
+                'currency' => 'usd',
+                'product_data' => [
+                    'name' => 'Order ID: ' . $order_id, // Add dynamic order info
+                ],
+                'unit_amount' => $total * 100, // Total in cents
+            ],
+            'quantity' => 1,
+        ]],
+        'mode' => 'payment',
+        'success_url' => 'https://yourwebsite.com/success.php?session_id={CHECKOUT_SESSION_ID}',
+        'cancel_url' => 'https://yourwebsite.com/cancel.php',
+    ]);
+
+    echo json_encode(['id' => $session->id]); // Return session ID as JSON
+}
+
+
+
+
+
+
+

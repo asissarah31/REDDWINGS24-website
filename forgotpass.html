@@ -1,0 +1,25 @@
+
+ajax.php
+
+
+if(isset($_POST['action']) && $_POST['action'] == 'forgot_password'){
+	$email = $_POST['email_reset'];
+	$query = $conn->query("SELECT * FROM users WHERE email = '$email'");
+	if($query->num_rows > 0){
+		// Logic to generate reset link and send email
+		$token = bin2hex(random_bytes(50)); // Generate a secure token
+		$conn->query("UPDATE users SET reset_token = '$token', token_expiry = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE email = '$email'");
+
+		$reset_link = "http://yourwebsite.com/reset_password.php?token=$token";
+		// Send email logic here
+		mail($email, "Password Reset", "Click this link to reset your password: $reset_link");
+
+		echo 1;
+	} else {
+		echo 0;
+	}
+}
+
+
+
+

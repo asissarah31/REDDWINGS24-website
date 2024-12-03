@@ -1,0 +1,82 @@
+<!-- Masthead-->
+ <header class="masthead">
+            <div class="container h-100">
+                <div class="row h-100 align-items-center justify-content-center text-center">
+                    <div class="col-lg-10 align-self-center mb-4 page-title">
+                    	<h1 class="text-white">Your Orders</h1>
+                        <hr class="divider my-4 bg-dark" />
+                    </div>
+                    
+                </div>
+            </div>
+        </header>
+<?php
+ob_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+include_once('header.php'); // Use include_once
+include_once('admin/db_connect.php'); // Use include_once
+
+// Fetch user's orders from the database
+$user_id = $_SESSION['login_user_id'];
+
+// Check if user is logged in
+if (!isset($user_id)) {
+    // Redirect to login page if not logged in
+    header("Location: login.php");
+    exit;
+}
+
+// Updated query to join orders with order_list to get payment_mode
+$query = $conn->query("
+    SELECT o.*, ol.payment_mode 
+    FROM orders o 
+    LEFT JOIN order_list ol ON o.order_id = ol.order_id 
+    WHERE o.user_id = '$user_id' 
+    ORDER BY o.order_date DESC
+") or die($conn->error); // This will display the error if the query fails.
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Your Orders</title>
+    <!-- Include necessary CSS/JS files here if needed -->
+</head>
+<body>
+    <div class="container">
+      
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Order Date</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Payment Mode</th> <!-- New column for payment method -->
+                </tr>
+            </thead>
+            <tbody>
+                <?php if ($query->num_rows > 0): ?>
+                    <?php while ($row = $query->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo $row['order_id']; ?></td>
+                            <td><?php echo date('Y-m-d', strtotime($row['order_date'])); ?></td>
+                            <td><?php echo $row['status']; ?></td>
+                            <td><?php echo number_format($row['total'], 2); ?></td>
+                            <td><?php echo htmlspecialchars($row['payment_mode']); ?></td> <!-- Display payment method -->
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="5" class="text-center">No orders found.</td> <!-- Update colspan to 5 -->
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
